@@ -1,0 +1,263 @@
+# Rules for deciding which postings are relevant.
+#
+# Term matching is case-insensitive and matches whole words only, so "intern"
+# does not match "Internal". Spaces and hyphens inside a term are flexible:
+# "co op" matches "co-op", "coop" and "co op"; "full stack" matches "fullstack".
+#
+# A posting is relevant only when ALL of these hold:
+#   1. title or employment type contains an early_career term
+#   2. title contains a role term from one of role_categories
+#   3. title contains no excluded_title_terms, and no non_software_terms
+#      unless it also contains a software_signal_terms term
+#   4. any year in the title (e.g. "Summer 2026") is one of target_years
+#   5. location is not clearly outside the US
+# Rejected postings list every reason, so you can tune these lists:
+#   python -m app.cli fetch --rejected --keyword intern
+
+titles:
+  early_career_terms:
+    - intern
+    - interns
+    - internship
+    - internships
+    - co op
+    - co ops
+
+  target_years: [2027]
+
+  # Checked in order; the first category with a matching term is reported.
+  # Specific categories come before the broad software_engineering one.
+  role_categories:
+    full_stack: [full stack]
+    backend: [back end, api]
+    python: [python]
+    data_analytics: [data analyst, data analytics, analytics, business intelligence]
+    data_engineering: [data engineer, data engineering, analytics engineer]
+    data_science: [data science, data scientist]
+    machine_learning: [machine learning, ml engineer, ai engineer]
+    software_engineering:
+      - software
+      - swe
+      - sde
+      - sdet
+      - developer
+      - programmer
+      - engineer
+      - engineering
+      - front end
+      - mobile
+      - ios
+      - android
+      - web
+      - devops
+      - sre
+      - site reliability
+      - infrastructure
+      - platform
+      - cloud
+      - security engineer
+
+  excluded_title_terms:
+    seniority:
+      - senior
+      - sr
+      - sr.
+      - staff
+      - principal
+      - lead
+      - manager
+      - management
+      - director
+      - head of
+      - vice president
+      - vp
+      - chief
+      - architect
+    education:
+      - phd
+      - ph.d.
+      - doctoral
+      - mba
+      - high school
+
+  # "engineer" is a broad role term, so titles from non-software fields are
+  # rejected too, UNLESS the title also has a clear software/data signal.
+  # Without that exception "Privacy and Civil Liberties Software Engineer" and
+  # "Sales Analytics Intern" would be wrongly dropped.
+  software_signal_terms:
+    - software
+    - swe
+    - sde
+    - developer
+    - programmer
+    - python
+    - back end
+    - full stack
+    - data
+    - analytics
+    - machine learning
+  non_software_terms:
+    - hardware
+    - mechanical
+    - electrical
+    - electronics
+    - firmware
+    - manufacturing
+    - civil
+    - chemical
+    - structural
+    - aerospace
+    - propulsion
+    - thermal
+    - rf
+    - analog
+    - asic
+    - fpga
+    - silicon
+    - optical
+    - battery
+    - materials
+    - sales
+    - marketing
+    - recruiting
+
+locations:
+  # Preferred US tech hubs (and their nearby tech cities). These rank higher
+  # later; other US locations are still kept.
+  priority_terms:
+    - Boston
+    - Cambridge, MA
+    - New York
+    - NYC
+    - Brooklyn
+    - Seattle
+    - Bellevue
+    - Redmond
+    - Chicago
+    - Austin
+    - San Francisco
+    - Bay Area
+    - San Jose
+    - Mountain View
+    - Palo Alto
+    - Sunnyvale
+    - Santa Clara
+    - Menlo Park
+    - Foster City
+    - Redwood City
+    - Washington, DC
+    - Washington DC
+    - Washington D.C.
+    - Arlington
+    - Reston
+    - Philadelphia
+    - Atlanta
+    - Denver
+    - Boulder
+
+  # A posting is rejected as non-US when none of its locations look like the US
+  # and at least one matches these terms.
+  non_us_terms:
+    - Canada
+    - Toronto
+    - Vancouver
+    - Montreal
+    - Ottawa
+    - Waterloo
+    - Ontario
+    - British Columbia
+    - Mexico
+    - Brazil
+    - Sao Paulo
+    - São Paulo
+    - Argentina
+    - Buenos Aires
+    - Colombia
+    - Bogota
+    - Chile
+    - Costa Rica
+    - United Kingdom
+    - UK
+    - England
+    - London
+    - Edinburgh
+    - Manchester
+    - Ireland
+    - Dublin
+    - Belfast
+    - Germany
+    - Berlin
+    - Munich
+    - Hamburg
+    - France
+    - Paris
+    - Netherlands
+    - Amsterdam
+    - Belgium
+    - Brussels
+    - Spain
+    - Madrid
+    - Barcelona
+    - Portugal
+    - Lisbon
+    - Italy
+    - Milan
+    - Switzerland
+    - Zurich
+    - Sweden
+    - Stockholm
+    - Denmark
+    - Copenhagen
+    - Norway
+    - Oslo
+    - Finland
+    - Helsinki
+    - Poland
+    - Warsaw
+    - Krakow
+    - Romania
+    - Bucharest
+    - Serbia
+    - Belgrade
+    - Czech
+    - Prague
+    - Austria
+    - Vienna
+    - Israel
+    - Tel Aviv
+    - India
+    - Bangalore
+    - Bengaluru
+    - Hyderabad
+    - Pune
+    - Mumbai
+    - Delhi
+    - Gurgaon
+    - Chennai
+    - Singapore
+    - Japan
+    - Tokyo
+    - South Korea
+    - Korea
+    - Seoul
+    - China
+    - Shanghai
+    - Beijing
+    - Hong Kong
+    - Taiwan
+    - Taipei
+    - Australia
+    - Sydney
+    - Melbourne
+    - New Zealand
+    - Philippines
+    - Manila
+    - United Arab Emirates
+    - UAE
+    - Dubai
+    - South Africa
+    - Nigeria
+    - Kenya
+    - EMEA
+    - APAC
+    - LATAM

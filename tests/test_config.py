@@ -1,6 +1,6 @@
 import pytest
 
-from app.config import load_companies
+from app.config import load_companies, load_job_preferences
 from app.schemas.company import ATSProvider
 
 
@@ -59,6 +59,25 @@ def test_invalid_entries_are_rejected(tmp_path, entry):
 
     with pytest.raises(ValueError, match="invalid company entry #1"):
         load_companies(path)
+
+
+def test_project_job_preferences_are_valid():
+    preferences = load_job_preferences()
+
+    assert "intern" in preferences.titles.early_career_terms
+    assert preferences.titles.role_categories
+
+
+def test_job_preferences_reject_unknown_keys(tmp_path):
+    path = tmp_path / "job_preferences.yaml"
+    path.write_text(
+        "titles:\n  early_career_terms: [intern]\n  role_categories: {swe: [software]}\n"
+        "  typo_terms: [x]\nlocations: {}\n",
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="invalid job preferences"):
+        load_job_preferences(path)
 
 
 def test_missing_companies_list_is_rejected(tmp_path):

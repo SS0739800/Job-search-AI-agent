@@ -1,7 +1,8 @@
 """Command-line entry point.
 
 Usage:
-    python -m app.cli fetch --company MongoDB --keyword intern
+    python -m app.cli fetch                       # relevant postings only
+    python -m app.cli fetch --rejected --keyword intern
     python -m app.cli verify-companies
 """
 
@@ -12,8 +13,10 @@ import re
 import sys
 import time
 from collections.abc import Sequence
+from dataclasses import asdict
 
-from app.config import load_companies
+from app.config import load_companies, load_job_preferences
+from app.discovery.filtering import FilterDecision, JobFilter
 from app.logging_config import configure_logging
 from app.schemas.company import ATSProvider, CompanyConfig
 from app.schemas.job import NormalizedJob
@@ -38,6 +41,12 @@ def build_parser() -> argparse.ArgumentParser:
     fetch.add_argument("--keyword", help="Only show titles containing this whole word, e.g. intern")
     fetch.add_argument("--limit", type=int, default=10, help="Max postings shown per company")
     fetch.add_argument("--json", action="store_true", help="Print normalized postings as JSON")
+    shown = fetch.add_mutually_exclusive_group()
+    shown.add_argument("--all", action="store_true", help="Show all postings, ignoring the filter")
+    shown.add_argument(
+        "--rejected", action="store_true",
+        help="Show only postings the filter rejected, with reasons (for tuning job_preferences.yaml)",
+    )
 
     commands.add_parser(
         "verify-companies", help="Check every registry entry against its live ATS API"
@@ -71,18 +80,24 @@ def fetch_company(
     return result, time.perf_counter() - started
 
 
-def format_job(job: NormalizedJob) -> str:
+def format_job(job: NormalizedJob, decision: FilterDecision) -> str:
     posted = job.posted_at.date().isoformat() if job.posted_at else "unknown"
+    if decision.is_relevant:
+        verdict = f"{decision.role_category} | location: {decision.location_match}"
+    else:
+        verdict = "REJECTED: " + "; ".join(decision.rejection_reasons)
     return (
         f"  {job.title}\n"
         f"    {job.location or 'location not listed'} | posted {posted} | "
-        f"dept: {job.department or '-'} | workplace: {job.workplace_type}\n"
+        f"type: {job.employment_type or '-'} | workplace: {job.workplace_type}\n"
+        f"    {verdict}\n"
         f"    {job.application_url}"
     )
 
 
 def run_fetch(args: argparse.Namespace) -> int:
     companies = select_companies(args.company)
+    job_filter = JobFilter(load_job_preferences())
     title_pattern = re.compile(rf"\b{re.escape(args.keyword)}\b", re.IGNORECASE) if args.keyword else None
     # In JSON mode, stdout carries only JSON so it can be piped to a file.
     status_stream = sys.stderr if args.json else sys.stdout
@@ -97,20 +112,30 @@ def run_fetch(args: argparse.Namespace) -> int:
                 failures += 1
                 continue
 
-            matches = [j for j in result.jobs if not title_pattern or title_pattern.search(j.title)]
-            match_note = f"; {len(matches)} match '{args.keyword}'" if title_pattern else ""
+            evaluated = [(job, job_filter.evaluate(job)) for job in result.jobs]
+            relevant_count = sum(decision.is_relevant for _, decision in evaluated)
+            if args.rejected:
+                evaluated = [(j, d) for j, d in evaluated if not d.is_relevant]
+            elif not args.all:
+                evaluated = [(j, d) for j, d in evaluated if d.is_relevant]
+            if title_pattern:
+                evaluated = [(j, d) for j, d in evaluated if title_pattern.search(j.title)]
+
             print(
                 f"\n{company.name} [{company.ats}:{company.board_id}] "
-                f"{len(result.jobs)} postings ({result.skipped_postings} skipped) "
-                f"in {elapsed:.1f}s{match_note}",
+                f"{len(result.jobs)} postings, {relevant_count} relevant "
+                f"({result.skipped_postings} skipped) in {elapsed:.1f}s",
                 file=status_stream,
             )
-            shown = matches[: args.limit]
+            shown = evaluated[: args.limit]
             if args.json:
-                json_output.extend(job.model_dump(mode="json") for job in shown)
+                json_output.extend(
+                    {**job.model_dump(mode="json"), "filter": asdict(decision)}
+                    for job, decision in shown
+                )
             else:
-                for job in shown:
-                    print(format_job(job))
+                for job, decision in shown:
+                    print(format_job(job, decision))
 
     if args.json:
         print(json.dumps(json_output, indent=2, ensure_ascii=False))

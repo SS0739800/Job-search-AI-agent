@@ -1,6 +1,6 @@
 # Claude Job Agent
 
-AI-assisted discovery of SWE / data internships and co-ops. Currently in **Phase 1: job discovery** (Greenhouse, Lever and Ashby adapters done; filtering and database next).
+AI-assisted discovery of SWE / data internships and co-ops. Currently in **Phase 1: job discovery** (Greenhouse, Lever and Ashby adapters and relevance filtering done; database next).
 
 ## Setup (Windows, PowerShell)
 
@@ -13,10 +13,13 @@ pip install -r requirements.txt
 ## Usage
 
 ```powershell
-# Preview normalized postings (nothing is saved yet)
-python -m app.cli fetch --company MongoDB --keyword intern
-python -m app.cli fetch --keyword intern --limit 3          # all active companies
+# Preview relevant postings (nothing is saved yet)
+python -m app.cli fetch                                      # all active companies
+python -m app.cli fetch --company MongoDB --all              # ignore the filter
+python -m app.cli fetch --rejected --keyword intern          # what was filtered out, and why
 python -m app.cli fetch --company stripe --json > stripe.json
+
+# Filter rules live in config/job_preferences.yaml
 
 # Check every board_id in config/companies.yaml against the live API
 python -m app.cli verify-companies
