@@ -1,0 +1,40 @@
+{
+  "jobs": [
+    {
+      "absolute_url": "https://www.example.com/careers/job/?gh_jid=1001",
+      "id": 1001,
+      "internal_job_id": 5001,
+      "title": "  2027 - Software Engineering Intern, AMER ",
+      "updated_at": "2026-11-16T09:27:51-05:00",
+      "first_published": "2026-10-23T08:57:16-04:00",
+      "location": {"name": "Austin; New York City; San Francisco"},
+      "content": "&lt;p&gt;Join our &lt;strong&gt;Platform&lt;/strong&gt; team.&amp;nbsp;&lt;/p&gt;\n&lt;ul&gt;\n&lt;li&gt;Python&lt;/li&gt;\n&lt;li&gt;SQL&lt;/li&gt;\n&lt;/ul&gt;",
+      "departments": [{"id": 1, "name": "Engineering"}, {"id": 2, "name": "Intern"}],
+      "offices": [
+        {"id": 10, "name": "Austin", "location": "Austin, TX, United States"},
+        {"id": 11, "name": "New York City", "location": "New York, NY, United States"},
+        {"id": 12, "name": "San Francisco", "location": null}
+      ],
+      "metadata": null,
+      "company_name": "Example Corp"
+    },
+    {
+      "absolute_url": "https://www.example.com/careers/job/?gh_jid=1002",
+      "id": 1002,
+      "title": "Senior Backend Engineer",
+      "updated_at": "2026-11-01T12:00:00Z",
+      "first_published": null,
+      "location": {"name": "Remote - US"},
+      "content": null,
+      "departments": [],
+      "offices": []
+    },
+    {
+      "absolute_url": "https://www.example.com/careers/job/?gh_jid=1003",
+      "id": 1003,
+      "title": "",
+      "location": {"name": "Boston"}
+    }
+  ],
+  "meta": {"total": 3}
+}

@@ -1,0 +1,92 @@
+# Company registry.
+#
+# Only add a board_id after confirming it against the live API, e.g.:
+#   python -m app.cli verify-companies
+#
+# Fields:
+#   name         Display name
+#   ats          greenhouse | lever | ashby
+#   board_id     Identifier in the ATS public API URL
+#   careers_url  Employer's public careers page
+#   active       false = keep in the registry but skip during searches
+#
+# Greenhouse entries below were verified on 2026-11-16 (API returned 200 with postings).
+
+companies:
+  - name: MongoDB
+    ats: greenhouse
+    board_id: mongodb
+    careers_url: https://www.mongodb.com/company/careers/teams
+    active: true
+
+  - name: Databricks
+    ats: greenhouse
+    board_id: databricks
+    careers_url: https://www.databricks.com/company/careers/open-positions
+    active: true
+
+  - name: Stripe
+    ats: greenhouse
+    board_id: stripe
+    careers_url: https://stripe.com/careers/search
+    active: true
+
+  - name: Coinbase
+    ats: greenhouse
+    board_id: coinbase
+    careers_url: https://www.coinbase.com/careers
+    active: true
+
+  - name: Lyft
+    ats: greenhouse
+    board_id: lyft
+    careers_url: https://www.lyft.com/careers
+    active: true
+
+  - name: Figma
+    ats: greenhouse
+    board_id: figma
+    careers_url: https://www.figma.com/careers/
+    active: true
+
+  - name: Pinterest
+    ats: greenhouse
+    board_id: pinterest
+    careers_url: https://www.pinterestcareers.com/jobs/
+    active: true
+
+  - name: Robinhood
+    ats: greenhouse
+    board_id: robinhood
+    careers_url: https://careers.robinhood.com/
+    active: true
+
+  - name: Datadog
+    ats: greenhouse
+    board_id: datadog
+    careers_url: https://careers.datadoghq.com/
+    active: true
+
+  - name: Cloudflare
+    ats: greenhouse
+    board_id: cloudflare
+    careers_url: https://www.cloudflare.com/careers/
+    active: true
+
+  - name: Airbnb
+    ats: greenhouse
+    board_id: airbnb
+    careers_url: https://careers.airbnb.com/positions/
+    active: true
+
+  - name: Toast
+    ats: greenhouse
+    board_id: toast
+    careers_url: https://careers.toasttab.com/
+    active: true
+
+  - name: Duolingo
+    ats: greenhouse
+    board_id: duolingo
+    careers_url: https://careers.duolingo.com/
+    active: true

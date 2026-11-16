@@ -1,0 +1,8 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "integration: calls real external job board APIs (run with: pytest -m integration)",
+]
+# Live API tests are excluded by default so the normal test run is fast and offline.
+addopts = "-m 'not integration'"
