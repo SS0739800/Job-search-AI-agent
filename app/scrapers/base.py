@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from typing import Any, ClassVar
 
 import httpx
+from pydantic import ValidationError
 
 from app.schemas.company import ATSProvider, CompanyConfig
 from app.schemas.job import NormalizedJob
@@ -44,9 +45,10 @@ class FetchResult:
 class JobBoardScraper(ABC):
     """Base class for a provider adapter.
 
-    Subclasses only describe *what* to request (build_request) and *how* to map
-    the response (parse_payload). Fetching, retrying and error classification
-    happen here once for all providers.
+    Subclasses describe *what* to request (build_request), *where* the postings
+    are in the response (extract_postings) and *how* to map one posting
+    (normalize_posting). Fetching, retrying, error classification and skipping
+    malformed postings happen here once for all providers.
     """
 
     provider: ClassVar[ATSProvider]
@@ -76,10 +78,36 @@ class JobBoardScraper(ABC):
         """Return the URL and query parameters for the company's job board."""
 
     @abstractmethod
+    def extract_postings(self, company: CompanyConfig, payload: Any) -> list[Any]:
+        """Return the list of raw postings, or raise SourceFetchError if the
+        response does not have the expected overall shape."""
+
+    @abstractmethod
+    def normalize_posting(
+        self, company: CompanyConfig, raw_posting: Any, fetched_at: datetime
+    ) -> NormalizedJob:
+        """Validate one raw posting and map it to a NormalizedJob.
+
+        Raises pydantic.ValidationError when the posting is malformed.
+        """
+
     def parse_payload(
         self, company: CompanyConfig, payload: Any, *, fetched_at: datetime
     ) -> FetchResult:
-        """Validate the raw JSON and convert each posting into a NormalizedJob."""
+        jobs: list[NormalizedJob] = []
+        skipped = 0
+        for raw_posting in self.extract_postings(company, payload):
+            try:
+                jobs.append(self.normalize_posting(company, raw_posting, fetched_at))
+            except ValidationError as exc:
+                # One bad posting should not hide the rest of the board.
+                skipped += 1
+                posting_id = raw_posting.get("id") if isinstance(raw_posting, dict) else None
+                logger.warning(
+                    "Skipping malformed %s posting %s from %s: %d validation error(s)",
+                    self.provider, posting_id, company.name, exc.error_count(),
+                )
+        return FetchResult(company=company, jobs=jobs, fetched_at=fetched_at, skipped_postings=skipped)
 
     def _get_json(self, company: CompanyConfig, url: str, params: dict[str, str]) -> Any:
         total_attempts = self._max_retries + 1

@@ -1,0 +1,40 @@
+[
+  {
+    "id": "85c6aec7-8da2-445d-9c4d-812365dbce97",
+    "text": "Data Science Intern [Summer 2027] ",
+    "categories": {
+      "commitment": "Internship/Co-op",
+      "department": "Example Internships",
+      "location": "Foster City, CA",
+      "team": "Data Science",
+      "allLocations": ["Foster City, CA", "Boston, MA"]
+    },
+    "createdAt": 1794006857184,
+    "country": "US",
+    "workplaceType": "hybrid",
+    "description": "<p><strong>About Our Internship Program<br></strong>Hands-on experience.</p>",
+    "descriptionPlain": "About Our Internship ProgramHands-on experience.",
+    "lists": [
+      {"text": "Qualifications", "content": "\n<li>Proficiency in Python and SQL</li>\n<li>Coursework in statistics</li>"},
+      {"text": "Bonus & Extras", "content": "<li>Spark</li>"}
+    ],
+    "additional": "<div><strong>Compensation</strong></div><div>$6,500 to $9,500 per month.</div>",
+    "hostedUrl": "https://jobs.lever.co/example/85c6aec7-8da2-445d-9c4d-812365dbce97",
+    "applyUrl": "https://jobs.lever.co/example/85c6aec7-8da2-445d-9c4d-812365dbce97/apply",
+    "salaryRange": {"min": 6500, "max": 9500, "currency": "USD", "interval": "per-month-salary"}
+  },
+  {
+    "id": "0f1e2d3c-0000-4000-8000-000000000002",
+    "text": "Senior Software Engineer",
+    "categories": {"location": "Remote - US"},
+    "workplaceType": "unspecified",
+    "lists": [],
+    "hostedUrl": "https://jobs.lever.co/example/0f1e2d3c-0000-4000-8000-000000000002",
+    "applyUrl": "https://jobs.lever.co/example/0f1e2d3c-0000-4000-8000-000000000002/apply"
+  },
+  {
+    "id": "0f1e2d3c-0000-4000-8000-000000000003",
+    "text": "Missing URLs Intern",
+    "categories": {}
+  }
+]

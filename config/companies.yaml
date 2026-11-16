@@ -90,3 +90,31 @@ companies:
     board_id: duolingo
     careers_url: https://careers.duolingo.com/
     active: true
+
+  # Lever entries verified on 2026-11-16. Note: Lever returns 200 with an empty
+  # list for sites that exist but have no postings (often companies that moved
+  # to another ATS), so a 200 alone does not prove a board is in use.
+
+  - name: Palantir
+    ats: lever
+    board_id: palantir
+    careers_url: https://www.palantir.com/careers/
+    active: true
+
+  - name: Zoox
+    ats: lever
+    board_id: zoox
+    careers_url: https://zoox.com/careers
+    active: true
+
+  - name: Spotify
+    ats: lever
+    board_id: spotify
+    careers_url: https://www.lifeatspotify.com/jobs
+    active: true
+
+  - name: Veeva Systems
+    ats: lever
+    board_id: veeva
+    careers_url: https://careers.veeva.com/
+    active: true

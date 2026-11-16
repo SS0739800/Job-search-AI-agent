@@ -6,15 +6,14 @@ entity-escaped HTML), departments and offices.
 """
 
 import html
-import logging
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, Field, ValidationError
+from pydantic import BaseModel, Field
 
 from app.schemas.company import ATSProvider, CompanyConfig
 from app.schemas.job import NormalizedJob
-from app.scrapers.base import FetchResult, JobBoardScraper, SourceFetchError
+from app.scrapers.base import JobBoardScraper, SourceFetchError
 from app.scrapers.normalization import (
     clean_optional,
     html_to_text,
@@ -22,8 +21,6 @@ from app.scrapers.normalization import (
     to_utc,
     unique_in_order,
 )
-
-logger = logging.getLogger(__name__)
 
 API_BASE_URL = "https://boards-api.greenhouse.io/v1/boards"
 HOSTED_BOARD_URL = "https://job-boards.greenhouse.io"
@@ -63,34 +60,17 @@ class GreenhouseScraper(JobBoardScraper):
     def build_request(self, company: CompanyConfig) -> tuple[str, dict[str, str]]:
         return f"{API_BASE_URL}/{company.board_id}/jobs", {"content": "true"}
 
-    def parse_payload(
-        self, company: CompanyConfig, payload: Any, *, fetched_at: datetime
-    ) -> FetchResult:
+    def extract_postings(self, company: CompanyConfig, payload: Any) -> list[Any]:
         if not isinstance(payload, dict) or not isinstance(payload.get("jobs"), list):
             raise SourceFetchError(
                 company, "unexpected response shape: missing 'jobs' list", retryable=False
             )
+        return payload["jobs"]
 
-        jobs: list[NormalizedJob] = []
-        skipped = 0
-        for raw_posting in payload["jobs"]:
-            try:
-                posting = GreenhousePosting.model_validate(raw_posting)
-            except ValidationError as exc:
-                skipped += 1
-                posting_id = raw_posting.get("id") if isinstance(raw_posting, dict) else None
-                logger.warning(
-                    "Skipping malformed Greenhouse posting %s from %s: %d validation error(s)",
-                    posting_id, company.name, exc.error_count(),
-                )
-                continue
-            jobs.append(self._normalize(company, posting, fetched_at))
-
-        return FetchResult(company=company, jobs=jobs, fetched_at=fetched_at, skipped_postings=skipped)
-
-    def _normalize(
-        self, company: CompanyConfig, posting: GreenhousePosting, fetched_at: datetime
+    def normalize_posting(
+        self, company: CompanyConfig, raw_posting: Any, fetched_at: datetime
     ) -> NormalizedJob:
+        posting = GreenhousePosting.model_validate(raw_posting)
         location_text = clean_optional(posting.location.name if posting.location else None)
         # Offices give structured "City, ST, Country" strings; fall back to
         # splitting the display text ("Austin; New York City") when absent.
@@ -110,7 +90,8 @@ class GreenhouseScraper(JobBoardScraper):
             title=posting.title.strip(),
             location=location_text,
             locations=locations,
-            employment_type=None,  # Greenhouse has no standard field for this
+            country=None,  # Greenhouse has no standard country field
+            employment_type=None,  # nor a standard employment type field
             workplace_type=infer_workplace_type(location_text, *locations),
             department=", ".join(department_names) or None,
             description=description or None,

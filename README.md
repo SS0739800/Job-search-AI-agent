@@ -1,6 +1,6 @@
 # Claude Job Agent
 
-AI-assisted discovery of SWE / data internships and co-ops. Currently in **Phase 1: job discovery** (Greenhouse adapter done; Lever and Ashby next).
+AI-assisted discovery of SWE / data internships and co-ops. Currently in **Phase 1: job discovery** (Greenhouse and Lever adapters done; Ashby next).
 
 ## Setup (Windows, PowerShell)
 
@@ -31,4 +31,4 @@ pytest -m integration   # live calls to real job board APIs
 
 ## Adding a company
 
-Find the board identifier in the company's careers links (e.g. `job-boards.greenhouse.io/<board_id>`), add it to `config/companies.yaml`, then run `python -m app.cli verify-companies`. Never add an identifier that has not been verified.
+Find the board identifier in the company's careers links (e.g. `job-boards.greenhouse.io/<board_id>` or `jobs.lever.co/<board_id>`), add it to `config/companies.yaml`, then run `python -m app.cli verify-companies`. Never add an identifier that has not been verified.
