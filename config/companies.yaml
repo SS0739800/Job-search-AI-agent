@@ -118,3 +118,41 @@ companies:
     board_id: veeva
     careers_url: https://careers.veeva.com/
     active: true
+
+  # Ashby entries verified on 2026-11-16.
+
+  - name: Ramp
+    ats: ashby
+    board_id: ramp
+    careers_url: https://ramp.com/careers
+    active: true
+
+  - name: Notion
+    ats: ashby
+    board_id: notion
+    careers_url: https://www.notion.com/careers
+    active: true
+
+  - name: Perplexity
+    ats: ashby
+    board_id: perplexity
+    careers_url: https://www.perplexity.ai/hub/careers
+    active: true
+
+  - name: Sierra
+    ats: ashby
+    board_id: sierra
+    careers_url: https://sierra.ai/careers
+    active: true
+
+  - name: OpenAI
+    ats: ashby
+    board_id: openai
+    careers_url: https://openai.com/careers/
+    active: true
+
+  - name: Plaid
+    ats: ashby
+    board_id: plaid
+    careers_url: https://plaid.com/careers/
+    active: true

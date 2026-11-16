@@ -3,7 +3,13 @@ from datetime import UTC, datetime, timedelta, timezone
 import pytest
 
 from app.schemas.job import WorkplaceType
-from app.scrapers.normalization import html_to_text, infer_workplace_type, to_utc, unique_in_order
+from app.scrapers.normalization import (
+    html_to_text,
+    infer_workplace_type,
+    normalize_country,
+    to_utc,
+    unique_in_order,
+)
 
 
 def test_html_to_text_keeps_paragraphs_and_bullets():
@@ -13,6 +19,12 @@ def test_html_to_text_keeps_paragraphs_and_bullets():
     )
 
     assert html_to_text(markup) == "About\n\nWe build tools.\n\n- Python\n- Go or Java\n\nLine\nbreak"
+
+
+def test_html_to_text_keeps_paragraph_wrapped_bullets_on_one_line():
+    markup = "<ul><li><p>Python</p></li><li><div>SQL</div></li></ul><p>After</p>"
+
+    assert html_to_text(markup) == "- Python\n- SQL\n\nAfter"
 
 
 def test_html_to_text_drops_scripts_and_styles():
@@ -39,6 +51,23 @@ def test_to_utc_converts_offsets_and_treats_naive_as_utc():
 )
 def test_infer_workplace_type(texts, expected):
     assert infer_workplace_type(*texts) is expected
+
+
+@pytest.mark.parametrize(
+    ("raw", "expected"),
+    [
+        ("United States", "US"),
+        ("USA", "US"),
+        (" us ", "US"),
+        ("United States of America", "US"),
+        ("GB", "GB"),
+        ("Canada", "Canada"),
+        ("", None),
+        (None, None),
+    ],
+)
+def test_normalize_country(raw, expected):
+    assert normalize_country(raw) == expected
 
 
 def test_unique_in_order_strips_and_drops_blanks():

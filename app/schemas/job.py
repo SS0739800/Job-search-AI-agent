@@ -35,7 +35,8 @@ class NormalizedJob(BaseModel):
     # provider lists them separately (used for location filtering later).
     location: str | None
     locations: list[str] = Field(default_factory=list)
-    # ISO country code (e.g. "US") when the provider reports one.
+    # Country when the provider reports one. The US is always "US"; other
+    # countries are kept as reported (e.g. "GB" from Lever, "Canada" from Ashby).
     country: str | None = None
     # Provider's own wording, e.g. Lever's "Internship/Co-op" or "Full-time".
     employment_type: str | None

@@ -18,6 +18,7 @@ from app.scrapers.normalization import (
     clean_optional,
     html_to_text,
     infer_workplace_type,
+    normalize_country,
     unique_in_order,
 )
 
@@ -118,7 +119,7 @@ class LeverScraper(JobBoardScraper):
             title=posting.text.strip(),
             location=location_text,
             locations=locations,
-            country=clean_optional(posting.country),
+            country=normalize_country(posting.country),
             employment_type=clean_optional(categories.commitment),
             workplace_type=workplace_type,
             department=department,
