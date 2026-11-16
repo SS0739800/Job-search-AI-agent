@@ -1,8 +1,10 @@
-"""Loading and validating YAML configuration files."""
+"""Loading settings (.env) and validating YAML configuration files."""
 
+import os
 from pathlib import Path
 
 import yaml
+from dotenv import load_dotenv
 from pydantic import ValidationError
 
 from app.schemas.company import CompanyConfig
@@ -12,6 +14,23 @@ PROJECT_ROOT = Path(__file__).resolve().parent.parent
 CONFIG_DIR = PROJECT_ROOT / "config"
 COMPANIES_FILE = CONFIG_DIR / "companies.yaml"
 JOB_PREFERENCES_FILE = CONFIG_DIR / "job_preferences.yaml"
+DEFAULT_SQLITE_PATH = PROJECT_ROOT / "data" / "jobs.db"
+
+
+def get_database_url() -> str:
+    """DATABASE_URL from the environment or .env, else a local SQLite file.
+
+    Relative SQLite paths are resolved against the project root, so commands
+    work no matter which directory they are run from.
+    """
+    load_dotenv(PROJECT_ROOT / ".env")
+    url = os.getenv("DATABASE_URL", "").strip()
+    if not url:
+        return f"sqlite:///{DEFAULT_SQLITE_PATH.as_posix()}"
+    prefix = "sqlite:///"
+    if url.startswith(prefix) and not Path(url.removeprefix(prefix)).is_absolute():
+        return f"{prefix}{(PROJECT_ROOT / url.removeprefix(prefix)).as_posix()}"
+    return url
 
 
 def load_job_preferences(path: Path = JOB_PREFERENCES_FILE) -> JobPreferences:

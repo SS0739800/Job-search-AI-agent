@@ -8,6 +8,7 @@ __pycache__/
 .env
 
 # Local data
+data/
 *.db
 *.sqlite3
 generated/

@@ -6,7 +6,18 @@ from typing import Any
 import httpx
 import pytest
 
+from app.database.db import create_db_engine, create_session_factory, init_db
+
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
+
+
+@pytest.fixture
+def session_factory(tmp_path):
+    """A fresh SQLite database file per test."""
+    engine = create_db_engine(f"sqlite:///{(tmp_path / 'test.db').as_posix()}")
+    init_db(engine)
+    yield create_session_factory(engine)
+    engine.dispose()
 
 
 @pytest.fixture

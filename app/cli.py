@@ -1,7 +1,10 @@
 """Command-line entry point.
 
 Usage:
-    python -m app.cli fetch                       # relevant postings only
+    python -m app.cli discover                    # fetch, filter and save to the database
+    python -m app.cli jobs                        # list saved jobs
+    python -m app.cli runs                        # recent discovery runs and failures
+    python -m app.cli fetch                       # preview relevant postings (no saving)
     python -m app.cli fetch --rejected --keyword intern
     python -m app.cli verify-companies
 """
@@ -15,8 +18,14 @@ import time
 from collections.abc import Sequence
 from dataclasses import asdict
 
+from sqlalchemy.orm import Session, sessionmaker
+
 from app.config import load_companies, load_job_preferences
+from app.database.db import create_db_engine, create_session_factory, init_db
+from app.database.models import Job, SearchRun
+from app.database.repositories import JobRepository, SearchRunRepository
 from app.discovery.filtering import FilterDecision, JobFilter
+from app.discovery.pipeline import DiscoveryPipeline
 from app.logging_config import configure_logging
 from app.schemas.company import ATSProvider, CompanyConfig
 from app.schemas.job import NormalizedJob
@@ -51,6 +60,23 @@ def build_parser() -> argparse.ArgumentParser:
     commands.add_parser(
         "verify-companies", help="Check every registry entry against its live ATS API"
     )
+
+    discover = commands.add_parser(
+        "discover", help="Fetch all boards, filter, and save relevant jobs to the database"
+    )
+    discover.add_argument(
+        "--company", action="append", metavar="NAME_OR_BOARD_ID",
+        help="Limit to these companies; repeatable. Default: all active supported companies.",
+    )
+
+    jobs = commands.add_parser("jobs", help="List jobs saved in the database")
+    jobs.add_argument("--company", help="Only this company")
+    jobs.add_argument("--include-closed", action="store_true", help="Also show closed jobs")
+    jobs.add_argument("--include-duplicates", action="store_true", help="Also show duplicates")
+    jobs.add_argument("--limit", type=int, default=50)
+
+    runs = commands.add_parser("runs", help="Show recent discovery runs")
+    runs.add_argument("--limit", type=int, default=5)
     return parser
 
 
@@ -163,15 +189,102 @@ def run_verify_companies() -> int:
     return 1 if failures else 0
 
 
+def open_database() -> sessionmaker[Session]:
+    engine = create_db_engine()
+    init_db(engine)
+    return create_session_factory(engine)
+
+
+def format_stored_job(job: Job) -> str:
+    seen = job.first_seen_at.strftime("%Y-%m-%d")
+    flags = [job.status] if job.status != "active" else []
+    if job.duplicate_of_id:
+        flags.append(f"duplicate of #{job.duplicate_of_id}")
+    flag_text = f" [{', '.join(flags)}]" if flags else ""
+    return (
+        f"  #{job.id} {job.company} - {job.title}{flag_text}\n"
+        f"    {job.location or 'location not listed'} | {job.role_category} | "
+        f"{job.location_match} | first seen {seen}\n"
+        f"    {job.application_url}"
+    )
+
+
+def format_run(run: SearchRun) -> str:
+    started = run.started_at.strftime("%Y-%m-%d %H:%M UTC")
+    duration = (
+        f"{(run.finished_at - run.started_at).total_seconds():.0f}s" if run.finished_at else "unfinished"
+    )
+    lines = [
+        f"Run #{run.id} {started} ({duration}) - {run.status}",
+        f"  sources: {run.sources_queried} queried, {run.sources_failed} failed",
+        f"  jobs: {run.jobs_fetched} fetched, {run.relevant_jobs} relevant, {run.new_jobs} new, "
+        f"{run.duplicate_jobs} duplicates, {run.updated_jobs} updated, "
+        f"{run.reopened_jobs} reopened, {run.closed_jobs} closed",
+    ]
+    for source in run.source_results:
+        if not source.succeeded:
+            lines.append(f"  FAILED {source.board_key}: {source.error}")
+        elif source.note:
+            lines.append(f"  NOTE   {source.board_key}: {source.note}")
+    return "\n".join(lines)
+
+
+def run_discover(args: argparse.Namespace) -> int:
+    companies = select_companies(args.company)
+    session_factory = open_database()
+    job_filter = JobFilter(load_job_preferences())
+
+    with create_http_client() as client:
+        sources = {provider: cls(client) for provider, cls in SCRAPER_CLASSES.items()}
+        summary = DiscoveryPipeline(session_factory, sources, job_filter).run(companies)
+
+    # The pipeline's session is closed; reload the run with its per-source results.
+    with session_factory() as session:
+        run = SearchRunRepository(session).get(summary.run.id)
+        print("\n" + format_run(run))
+    if summary.new_jobs:
+        print(f"\nNew jobs ({len(summary.new_jobs)}):")
+        for job in summary.new_jobs:
+            print(format_stored_job(job))
+    return 0 if summary.run.status == "success" else 1
+
+
+def run_jobs(args: argparse.Namespace) -> int:
+    with open_database()() as session:
+        found = JobRepository(session).list_jobs(
+            include_closed=args.include_closed, include_duplicates=args.include_duplicates,
+            company=args.company, limit=args.limit,
+        )
+        print(f"{len(found)} job(s)")
+        for job in found:
+            print(format_stored_job(job))
+    return 0
+
+
+def run_runs(args: argparse.Namespace) -> int:
+    with open_database()() as session:
+        runs = SearchRunRepository(session).recent(args.limit)
+        if not runs:
+            print("No discovery runs yet. Run: python -m app.cli discover")
+        for run in runs:
+            print(format_run(run) + "\n")
+    return 0
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     # Avoid crashes on Windows consoles that can't encode some job titles.
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(errors="replace")
     args = build_parser().parse_args(argv)
     configure_logging(args.verbose)
-    if args.command == "fetch":
-        return run_fetch(args)
-    return run_verify_companies()
+    handlers = {
+        "fetch": lambda: run_fetch(args),
+        "verify-companies": run_verify_companies,
+        "discover": lambda: run_discover(args),
+        "jobs": lambda: run_jobs(args),
+        "runs": lambda: run_runs(args),
+    }
+    return handlers[args.command]()
 
 
 if __name__ == "__main__":
